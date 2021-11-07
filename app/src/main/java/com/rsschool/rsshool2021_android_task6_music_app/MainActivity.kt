@@ -13,6 +13,7 @@ import android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -34,7 +35,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         binding.textViewSongText.movementMethod = ScrollingMovementMethod()
 
-        mainViewModel.trackStateFlow.onEach(::renderTrack).launchIn(lifecycleScope)
+        mainViewModel.run {
+            trackStateFlow.onEach(::renderTrack).launchIn(lifecycleScope)
+            controlsState.onEach(::renderControlsState).launchIn(lifecycleScope)
+        }
 
         mediaBrowser = MediaBrowserCompat(
             this,
@@ -141,11 +145,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             if (state == null) return
-            val currentState = state.state
-            binding.buttonPlay.isSelected =
-                currentState == PlaybackStateCompat.STATE_PLAYING ||
-                    currentState == PlaybackStateCompat.STATE_SKIPPING_TO_NEXT ||
-                    currentState == PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS
+            mainViewModel.setPlaybackState(state.state)
         }
     }
 
@@ -153,5 +153,35 @@ class MainActivity : AppCompatActivity() {
         binding.imageView.load(track.bitmapUri)
         binding.textViewSongName.text = track.artist
         binding.textViewSongText.text = track.title
+    }
+
+    private fun renderControlsState(state: MainViewControlsState) {
+        renderPlay(state.isPlay)
+        renderStop(state.isStopped)
+        renderPause(state.isPause)
+    }
+
+    private fun renderPlay(isPlay: Boolean) {
+        binding.buttonPlay.isSelected = isPlay
+        if (isPlay) binding.buttonPause.isEnabled = true
+    }
+
+    private fun renderPause(isPaused: Boolean) {
+        binding.buttonPause.apply {
+            if (isPaused) isEnabled = true
+            isSelected = isPaused
+        }
+    }
+
+    private fun renderStop(isStopped: Boolean) {
+        binding.buttonStop.apply {
+            if (!isStopped) {
+                binding.buttonPause.apply {
+                    isSelected = false
+                    isEnabled = false
+                }
+            }
+            isEnabled = isStopped
+        }
     }
 }

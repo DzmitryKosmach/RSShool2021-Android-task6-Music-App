@@ -284,6 +284,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onStop() {
+            if (player.getPlayWhenReady()) {
+                player.setPlayWhenReady(false)
+            }
             if (audioFocusRequested) {
                 audioFocusRequested = false
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -295,7 +298,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
             }
             mediaSession.isActive = false
-            player.stop()
+
             currentState = PlaybackStateCompat.STATE_STOPPED
             setMediaPlaybackState(currentState)
             refreshNotificationAndForegroundStatus(currentState)
@@ -314,8 +317,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         override fun onSkipToNext() {
             startService(Intent(applicationContext, MediaPlaybackService::class.java))
             val track = musicRepository.getNext()
+            Log.i("DDD3: ", "onSkipToNext()")
             updateMetadataFromTrack(track)
             prepareToPlay(track.trackUri)
+            currentState = PlaybackStateCompat.STATE_PLAYING
             setMediaPlaybackState(currentState)
             refreshNotificationAndForegroundStatus(currentState)
         }
@@ -327,12 +332,12 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             prepareToPlay(track.trackUri)
             mediaSession.isActive = true
             player.playWhenReady = true
+            currentState = PlaybackStateCompat.STATE_PLAYING
             setMediaPlaybackState(currentState)
             refreshNotificationAndForegroundStatus(currentState)
         }
 
         private fun prepareToPlay(uri: String?) {
-
             val mediaItem = MediaItem.fromUri(uri ?: "")
             player.setMediaItem(mediaItem)
             player.prepare()
@@ -375,9 +380,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 )
 
             PlaybackStateCompat.STATE_PAUSED -> (
-                PlaybackStateCompat.ACTION_PLAY_PAUSE
-                    or PlaybackStateCompat.ACTION_PAUSE
+                PlaybackStateCompat.ACTION_PAUSE
+                    or PlaybackStateCompat.ACTION_PLAY_PAUSE
                 )
+
             PlaybackStateCompat.STATE_STOPPED -> PlaybackStateCompat.ACTION_STOP
 
             PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> PlaybackStateCompat.ACTION_SKIP_TO_NEXT
