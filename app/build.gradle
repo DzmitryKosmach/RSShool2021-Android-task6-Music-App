@@ -69,6 +69,6 @@ dependencies {
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiVersion"
 
     //Exoplayer
-    def exoplayerVersion = "2.15.1"
+    def exoplayerVersion = "2.16.0"
     implementation "com.google.android.exoplayer:exoplayer:$exoplayerVersion"
 }
